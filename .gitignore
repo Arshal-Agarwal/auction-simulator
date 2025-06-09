@@ -42,3 +42,6 @@ frontend/.vercel
 # typescript
 frontend/*.tsbuildinfo
 frontend/next-env.d.ts
+
+reference.txt
+list_of_all_services
