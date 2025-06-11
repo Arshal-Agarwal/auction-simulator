@@ -2,6 +2,10 @@
 
 # dependencies
 frontend/node_modules
+friends_related_services/node_modules
+*/node_modules
+*.env
+backend/node_modules
 backend/node_modules
 frontend/.env
 backend/.env
@@ -45,3 +49,7 @@ frontend/next-env.d.ts
 
 reference.txt
 list_of_all_services
+ContextForGPT
+
+Curl-Commands.txt
+todo.txt
