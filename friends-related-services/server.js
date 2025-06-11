@@ -1,20 +1,33 @@
 const express = require('express');
 const cors = require("cors");
-const connectDB = require("./db/connectDB")
+const cookieParser = require("cookie-parser");
+const { connectMongoDB } = require('./db/connectDB');
+const request_routes = require('./routes/requests.routes');
+const manage_routes = require('./routes/manage.routes');
 
 const app = express();
 const port = 5002;
 
 // Connect to MongoDB
-connectDB();
+connectMongoDB();
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+
+// ✅ Allow cookies + credentials from frontend
+app.use(cors({
+  origin: 'http://localhost:3000', // Or the URL of your frontend
+  credentials: true               // ✅ Allow cookies
+}));
+
+app.use(cookieParser()); // ✅ Enable cookie parsing
 
 // Routes
+app.use("/requests", request_routes);
+app.use("/manage", manage_routes);
+
 app.get('/', (req, res) => {
-  res.send('Hello World!');
+  res.send(`Server for friends related services running on http://localhost:${port}`);
 });
 
 // Start server
