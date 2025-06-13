@@ -13,7 +13,6 @@ const sendRequest = async (req, res) => {
   }
 
   try {
-    // ❌ DON'T use mysqlPool.promise().query
     const [existing] = await mysqlPool.query(
       `SELECT * FROM friend_requests WHERE requester_uuid = ? AND receiver_uuid = ?`,
       [requester_uuid, receiver_uuid]
@@ -61,7 +60,7 @@ const retractRequest = async (req, res) => {
 };
 
 const acceptRequest = async (req, res) => {
-  const receiver_uuid = req.user?.userUuid; // The one accepting the request
+  const receiver_uuid = req.user?.userUuid;
   const { requester_uuid } = req.body;
 
   if (!requester_uuid) {
@@ -69,7 +68,6 @@ const acceptRequest = async (req, res) => {
   }
 
   try {
-    // 1. Delete the request
     const [deleteResult] = await mysqlPool.query(
       `DELETE FROM friend_requests WHERE requester_uuid = ? AND receiver_uuid = ?`,
       [requester_uuid, receiver_uuid]
@@ -79,7 +77,6 @@ const acceptRequest = async (req, res) => {
       return res.status(404).json({ error: 'No friend request found.' });
     }
 
-    // 2. Insert both directional friendships
     await mysqlPool.query(
       `INSERT INTO friends (user_uuid, friend_uuid) VALUES (?, ?), (?, ?)`,
       [requester_uuid, receiver_uuid, receiver_uuid, requester_uuid]
@@ -149,4 +146,11 @@ const fetchReceivedRequests = async (req, res) => {
   }
 };
 
-module.exports = {sendRequest,retractRequest,acceptRequest,rejectRequest,fetchReceivedRequests,fetchSentRequests}
+module.exports = {
+  sendRequest,
+  retractRequest,
+  acceptRequest,
+  rejectRequest,
+  fetchReceivedRequests,
+  fetchSentRequests,
+};

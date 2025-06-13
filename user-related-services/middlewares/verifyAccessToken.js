@@ -2,11 +2,10 @@ const jwt = require('jsonwebtoken');
 const RefreshToken = require('chat-shared-schemas').RefreshToken;
 
 async function verifyAccessToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const accessToken = authHeader && authHeader.split(' ')[1]; // Format: Bearer <token>
+  const accessToken = req.cookies?.accessToken;
 
   if (!accessToken) {
-    return res.status(401).json({ error: 'Access token missing' });
+    return res.status(401).json({ error: 'Access token missing in cookies' });
   }
 
   try {
@@ -38,7 +37,7 @@ async function verifyAccessToken(req, res, next) {
         return res.status(403).json({ error: 'Invalid or expired refresh token (not in DB)' });
       }
 
-      // Optional: Track replaced token chains
+      // Generate new access token
       const newAccessToken = jwt.sign(
         { userUuid: decodedRefresh.userUuid },
         process.env.ACCESS_TOKEN_SECRET,
@@ -47,14 +46,19 @@ async function verifyAccessToken(req, res, next) {
 
       req.user = { userUuid: decodedRefresh.userUuid };
 
-      // Set new access token in response header
-      res.setHeader('Authorization', `Bearer ${newAccessToken}`);
-      console.log(`🔄 Access token refreshed for user: ${decodedRefresh.userUuid}`);
+      // Set new access token as cookie
+      res.cookie('accessToken', newAccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
 
+      console.log(`🔄 Access token refreshed for user: ${decodedRefresh.userUuid}`);
       return next();
     } catch (refreshErr) {
       console.error('Refresh token verification failed:', refreshErr);
-      return res.status(403).json({ error: 'Invalid or expired refresh token (JWT verify failed)' });
+      return res.status(403).json({ error: 'Invalid or expired refresh token' });
     }
   }
 }

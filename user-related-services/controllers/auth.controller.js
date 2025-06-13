@@ -48,18 +48,27 @@ const login = async (req, res) => {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
-    // Set cookie
-    res.cookie('refreshToken', refreshTokenValue, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'Strict',
       path: '/',
+    };
+
+    // Set access token cookie (expires in 15 minutes)
+    res.cookie('accessToken', accessToken, {
+      ...cookieOptions,
+      expires: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+    });
+
+    // Set refresh token cookie (expires in 7 days)
+    res.cookie('refreshToken', refreshTokenValue, {
+      ...cookieOptions,
       expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
     return res.status(200).json({
       message: '✅ Login successful',
-      accessToken,
       userUuid,
     });
   } catch (err) {
@@ -67,6 +76,7 @@ const login = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 
 const logout = async (req, res) => {
@@ -87,6 +97,15 @@ const logout = async (req, res) => {
       sameSite: 'Strict',
       path: '/',
     });
+
+    // Clear the access token cookie
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+
 
     return res.status(200).json({ message: '✅ Logged out successfully' });
   } catch (err) {

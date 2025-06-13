@@ -1,39 +1,50 @@
 const express = require('express');
-const fetch = require('node-fetch'); // Import node-fetch
+const fetch = require('node-fetch');
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
 app.use(express.json());
 
-// Utility function to handle proxy requests
+// Enable CORS to allow cookies and frontend communication
+app.use(cors({
+  origin: 'http://localhost:3000', // Replace with your frontend origin
+  credentials: true
+}));
+
+// Proxy utility with proper cookie handling
 const proxyRequest = async (req, res, target) => {
   try {
-    const url = `${target}${req.url}`; // Construct the full URL
+    const url = `${target}${req.url}`;
     console.log(`Proxying request to: ${url}`);
 
     const fetchOptions = {
       method: req.method,
       headers: {
-        ...req.headers,  // Forward all client headers
-        host: new URL(target).host // Set the correct Host header
+        ...req.headers,
+        host: new URL(target).host,
+        cookie: req.headers.cookie || '' // forward cookies
       },
-      body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined
+      body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body)
     };
-
-    // Log outgoing request headers for debugging
-    console.log('Outgoing Headers:', fetchOptions.headers);
 
     const response = await fetch(url, fetchOptions);
 
-    // Forward the status code and headers from the backend
+    // Set status
     res.status(response.status);
-    for (const [header, value] of response.headers.entries()) {
-      res.setHeader(header, value);
+
+    // Forward all headers, especially Set-Cookie properly
+    const rawHeaders = response.headers.raw();
+    for (const [header, value] of Object.entries(rawHeaders)) {
+      if (header.toLowerCase() === 'set-cookie') {
+        res.setHeader('Set-Cookie', value); // value is already an array
+      } else {
+        res.setHeader(header, value);
+      }
     }
 
-    // Send the response body back to the client
-    const body = await response.text();
-    res.send(body);
+    const responseBody = await response.text();
+    res.send(responseBody);
 
   } catch (error) {
     console.error('Proxy Error:', error);
@@ -41,22 +52,12 @@ const proxyRequest = async (req, res, target) => {
   }
 };
 
-// Proxy to User Service
-app.use('/users', async (req, res) => {
-  await proxyRequest(req, res, 'http://localhost:5001');
-});
+// Proxy to microservices
+app.use('/users', (req, res) => proxyRequest(req, res, 'http://localhost:5001'));
+app.use('/friends', (req, res) => proxyRequest(req, res, 'http://localhost:5002'));
+app.use('/messages', (req, res) => proxyRequest(req, res, 'http://localhost:5003'));
 
-// Proxy to Friends Service
-app.use('/friends', async (req, res) => {
-  await proxyRequest(req, res, 'http://localhost:5002');
-});
-
-// Proxy to Message Service
-app.use('/messages', async (req, res) => {
-  await proxyRequest(req, res, 'http://localhost:5003');
-});
-
-// Health route
+// Health check
 app.get('/', (req, res) => {
   res.send('Gateway is running');
 });

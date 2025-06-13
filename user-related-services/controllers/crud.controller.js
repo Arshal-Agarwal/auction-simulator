@@ -70,21 +70,36 @@ const addUser = async (req, res) => {
     });
     console.log('Refresh token stored in MongoDB');
 
+    console.log('All response cookies about to be set');
+    console.log('Access Token Cookie:', accessToken);
+    console.log('Refresh Token Cookie:', refreshToken);
+
+
     // Set refresh token cookie
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
     console.log('Refresh token cookie set');
+
+    // Set access token cookie
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 15 * 60 * 1000 // 15 minutes
+    });
+    console.log('Access token cookie set');
 
     // Respond with success
     res.status(201).json({
       message: '✅ User created successfully',
       uuid,
-      auth_token,
-      accessToken
+      auth_token
     });
   } catch (err) {
     console.error('❌ Error adding user:', err);
@@ -173,7 +188,16 @@ const deleteUser = async (req, res) => {
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    // Clear the access token cookie
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
     });
 
     res.status(200).json({ message: '🗑️ User deleted successfully' });
@@ -254,4 +278,4 @@ const updateUserDetails = async (req, res) => {
 
 
 
-module.exports = { addUser, deleteUser ,fetchUserDetails,updateUserDetails};
+module.exports = { addUser, deleteUser, fetchUserDetails, updateUserDetails };
