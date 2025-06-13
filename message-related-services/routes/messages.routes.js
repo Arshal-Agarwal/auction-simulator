@@ -1,9 +1,9 @@
 const router = require('express').Router()
+const {fetchMessagesByConversationId} = require('../controllers/messages.controllers')
+const { verifyAccessToken } = require('../middlewares/verifyAccessToken')
 
 
-router.get('/' , (req , res)=>{
-    // router code here
-})
+router.post('/fetchMessagesByConversation' , verifyAccessToken ,fetchMessagesByConversationId)
 
 
 router.get('/another-route' , (req , res)=>{
