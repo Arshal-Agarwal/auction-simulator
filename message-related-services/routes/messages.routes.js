@@ -4,8 +4,6 @@ const { verifyAccessToken } = require('../middlewares/verifyAccessToken')
 
 
 router.post('/fetchMessagesByConversation' , verifyAccessToken ,fetchMessagesByConversationId)
-
-
 router.get('/another-route' , (req , res)=>{
     // router code here
 })

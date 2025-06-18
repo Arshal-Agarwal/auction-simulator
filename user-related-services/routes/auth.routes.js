@@ -1,11 +1,27 @@
-const router = require('express').Router();
-const {login,logout} = require('../controllers/auth.controller');
+const express = require('express');
+const router = express.Router();
+const passport = require('passport');
+const { login, logout, checkEmailExists } = require('../controllers/auth.controller');
+const { googleOAuthCallback, githubOAuthCallback } = require('../controllers/oauth.controller');
 
-router.get('/',(req,res)=>{
-    res.send("http://localhost:4000/users/auth api endpoint working correctly");
-});
+// 🟢 Email existence check route
+router.get('/check-email', checkEmailExists);
 
-router.post('/login' , login);
-router.post('/logout' , logout);
+// 🔐 Local login/logout
+router.post('/login', login);
+router.post('/logout', logout);
 
-module.exports  = router
+// 🌐 Google OAuth
+router.get('/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    prompt: 'select_account',
+  })
+);
+router.get('/google/callback', passport.authenticate('google', { session: false }), googleOAuthCallback);
+
+// 🐱 GitHub OAuth
+router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
+router.get('/github/callback', passport.authenticate('github', { session: false }), githubOAuthCallback);
+
+module.exports = router;

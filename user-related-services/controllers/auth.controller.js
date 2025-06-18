@@ -4,6 +4,29 @@ const { v4: uuidv4 } = require('uuid');
 const RefreshToken = require('../models/RefreshTokenModel');
 const { mysqlPool } = require('../db/connectDB');
 
+const checkEmailExists = async (req, res) => {
+  const email = req.query.email;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Missing email query parameter' });
+  }
+
+  try {
+    const [rows] = await mysqlPool.query(
+      'SELECT COUNT(*) AS count FROM users WHERE email = ?',
+      [email]
+    );
+
+    const exists = rows[0].count > 0;
+
+    res.status(200).json({ exists });
+  } catch (err) {
+    console.error('❌ Error checking email:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
 const login = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -117,4 +140,5 @@ const logout = async (req, res) => {
 module.exports = {
   login,
   logout,
+  checkEmailExists
 };
