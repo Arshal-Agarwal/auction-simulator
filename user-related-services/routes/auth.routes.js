@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
-const { login, logout, checkEmailExists } = require('../controllers/auth.controller');
+const { login, logout, checkEmailExists,checkUsernameExists} = require('../controllers/auth.controller');
 const { googleOAuthCallback, githubOAuthCallback } = require('../controllers/oauth.controller');
 
 // 🟢 Email existence check route
 router.get('/check-email', checkEmailExists);
+router.get('/check-username', checkUsernameExists);
 
 // 🔐 Local login/logout
 router.post('/login', login);

@@ -11,7 +11,7 @@ const googleOAuthCallback = async (req, res) => {
 
     const redirectUrl = isComplete
       ? 'http://localhost:3000/home'
-      : `http://localhost:3000/complete-signup?email=${encodeURIComponent(user.email)}`;
+      : `http://localhost:3000/pages/auth/complete-pre-signup?email=${user.email}`;
 
     res.redirect(redirectUrl);
   } catch (err) {
@@ -70,11 +70,19 @@ const githubOAuthCallback = async (req, res) => {
   try {
     const user = req.user;
     await issueTokensAndSetCookies(user, res);
-    res.status(200).json({ message: '✅ GitHub OAuth success', uuid: user.uuid });
+
+    const isComplete = await isUserProfileComplete(user.uuid); // same check
+
+    const redirectUrl = isComplete
+      ? 'http://localhost:3000/home'
+      : `http://localhost:3000/pages/auth/complete-pre-signup?email=${encodeURIComponent(user.email)}`;
+
+    res.redirect(redirectUrl);
   } catch (err) {
     console.error('GitHub OAuth callback error:', err);
     res.status(500).json({ error: 'GitHub OAuth failed' });
   }
 };
+
 
 module.exports = { googleOAuthCallback, githubOAuthCallback };

@@ -10,11 +10,13 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "lottie-react": "^2.4.1",
     "lucide-react": "^0.515.0",
     "next": "15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-toastify": "^11.0.5"
+    "react-toastify": "^11.0.5",
+    "validator": "^13.15.15"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

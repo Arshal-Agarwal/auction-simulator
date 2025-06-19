@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 
 export default function CreateAccount() {
     const [coords, setCoords] = useState({ lat: null, lng: null });
@@ -42,7 +43,7 @@ export default function CreateAccount() {
                 lng: coords.lng?.toString() || "",
             }).toString();
 
-            router.push(`/complete-signup?${params}`);
+            router.push(`/pages/auth/complete-pre-signup?${params}`);
         } catch (err) {
             console.error("Error:", err);
             toast.error(err.message || "Something went wrong.");
@@ -190,9 +191,9 @@ export default function CreateAccount() {
 
                                 <p className="text-center text-sm text-gray-600">
                                     Already have an account?{" "}
-                                    <a href="#" className="text-indigo-600 hover:text-indigo-700 font-medium">
+                                    <Link href="/pages/auth/sign-in" className="text-indigo-600 hover:text-indigo-700 font-medium">
                                         Sign in
-                                    </a>
+                                    </Link>
                                 </p>
                             </div>
                         </div>

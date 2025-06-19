@@ -33,7 +33,13 @@ passport.use(new GoogleStrategy({
     let user = rows[0];
     if (!user) user = await createUser({ username, email, profilePicture });
 
-    done(null, { uuid: user.uuid });
+    done(null, {
+      uuid: user.uuid,
+      email: email, // ← pass it forward
+      username: username,
+      profilePicture: profilePicture
+    });
+
   } catch (err) {
     done(err);
   }
@@ -57,7 +63,13 @@ passport.use(new GitHubStrategy({
     let user = rows[0];
     if (!user) user = await createUser({ username, email, profilePicture });
 
-    done(null, { uuid: user.uuid });
+    done(null, {
+      uuid: user.uuid,
+      email: email, // ← pass it forward
+      username: username,
+      profilePicture: profilePicture
+    });
+
   } catch (err) {
     done(err);
   }
