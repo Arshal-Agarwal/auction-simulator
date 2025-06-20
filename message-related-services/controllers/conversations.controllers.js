@@ -1,3 +1,4 @@
+const { mysqlPool } = require('../../user-related-services/db/connectDB');
 const Conversation = require('../models/ConversationModel');
 
 const Message = require('../models/MessageModel'); // Import the Message model
@@ -88,16 +89,41 @@ const fetchUserConversations = async (req, res) => {
   }
 
   try {
+    // Step 1: Fetch conversations involving the user
     const conversations = await Conversation.find({
       participants: userUuid,
-    })
-      .sort({ updatedAt: -1 })
-      .exec();
+    }).sort({ updatedAt: -1 });
 
-    return res.status(200).json({ conversations });
+    // Step 2: Extract all unique participant UUIDs
+    const allUuids = [
+      ...new Set(conversations.flatMap((c) => c.participants)),
+    ];
+
+    
+    const [rows] = await mysqlPool.execute(
+      `SELECT uuid, username FROM users WHERE uuid IN (${allUuids.map(() => '?').join(',')})`,
+      allUuids
+    );
+
+    // Step 4: Create UUID → username map
+    const uuidMap = {};
+    rows.forEach((row) => {
+      uuidMap[row.uuid] = row.username;
+    });
+
+    // Step 5: Replace UUIDs with { uuid, username }
+    const populatedConversations = conversations.map((c) => ({
+      ...c.toObject(),
+      participants: c.participants.map((uuid) => ({
+        uuid,
+        username: uuidMap[uuid] || "Unknown",
+      })),
+    }));
+
+    return res.status(200).json({ conversations: populatedConversations });
   } catch (err) {
-    console.error('❌ Error fetching conversations:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("❌ Error fetching conversations:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 

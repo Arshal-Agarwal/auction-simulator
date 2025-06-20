@@ -48,7 +48,7 @@ export default function SignInPage() {
       }
 
       toast.success("Signed in successfully!");
-      setTimeout(() => router.push("/home"), 1000);
+      setTimeout(() => router.push("/pages/home"), 1000);
     } catch (err) {
       toast.error(err.message || "Something went wrong.");
     } finally {

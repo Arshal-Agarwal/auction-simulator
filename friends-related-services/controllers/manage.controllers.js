@@ -35,29 +35,29 @@ const getFriends = async (req, res) => {
     const [rows] = await mysqlPool.query(
       `
       SELECT 
-        CASE 
-          WHEN user_uuid = ? THEN friend_uuid
-          ELSE user_uuid
-        END AS friend_uuid,
-        created_at
-      FROM friends
-      WHERE user_uuid = ? OR friend_uuid = ?
+        u.uuid AS uuid,
+        u.username,
+        u.profile_picture,
+        f.created_at
+      FROM friends f
+      JOIN users u ON (
+        (f.user_uuid = ? AND u.uuid = f.friend_uuid) OR
+        (f.friend_uuid = ? AND u.uuid = f.user_uuid)
+      )
+      WHERE f.user_uuid = ? OR f.friend_uuid = ?
       `,
-      [userUuid, userUuid, userUuid]
+      [userUuid, userUuid, userUuid, userUuid]
     );
 
-    // ✅ Filter unique friend_uuids
+    // ✅ Deduplicate by uuid (in case multiple entries exist)
     const uniqueFriendsMap = new Map();
-    for (const row of rows) {
-      if (!uniqueFriendsMap.has(row.friend_uuid)) {
-        uniqueFriendsMap.set(row.friend_uuid, row.created_at);
+    for (const friend of rows) {
+      if (!uniqueFriendsMap.has(friend.uuid)) {
+        uniqueFriendsMap.set(friend.uuid, friend);
       }
     }
 
-    const uniqueFriends = Array.from(uniqueFriendsMap.entries()).map(([friend_uuid, created_at]) => ({
-      friend_uuid,
-      created_at
-    }));
+    const uniqueFriends = Array.from(uniqueFriendsMap.values());
 
     return res.status(200).json({ friends: uniqueFriends });
   } catch (err) {
@@ -65,6 +65,7 @@ const getFriends = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
 
 
 module.exports = { getFriends , removeFriend};
