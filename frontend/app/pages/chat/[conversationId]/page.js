@@ -97,7 +97,6 @@ export default function ConversationPage() {
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
-
     socket.emit("send_message", {
       conversationId,
       senderUuid: userUuid,
@@ -121,17 +120,20 @@ export default function ConversationPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-[#111827] transition-colors duration-200">
+      
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-200 px-4 py-3 shadow-sm flex items-center gap-4">
+      <header className="sticky top-0 z-30 bg-white/80 dark:bg-[#1f2937]/80 backdrop-blur border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm flex items-center gap-4">
         <img
           src={getImage() || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
           alt="avatar"
-          className="w-11 h-11 rounded-full object-cover border border-gray-300"
+          className="w-11 h-11 rounded-full object-cover border border-gray-300 dark:border-gray-600"
         />
         <div className="flex-1 overflow-hidden">
-          <h2 className="text-lg font-semibold text-gray-900 truncate">{getTitle()}</h2>
-          <p className="text-sm text-gray-500 truncate">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+            {getTitle()}
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
             {conversation?.isGroup
               ? `${conversation?.participants.length} members`
               : "Direct chat"}
@@ -145,10 +147,10 @@ export default function ConversationPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search messages"
-            className="pl-10 pr-4 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white text-gray-700"
+            className="pl-10 pr-4 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#1f2937] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
           <svg
-            className="w-4 h-4 absolute left-3 top-2.5 text-gray-400"
+            className="w-4 h-4 absolute left-3 top-2.5 text-gray-400 dark:text-gray-500"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -164,9 +166,9 @@ export default function ConversationPage() {
       </header>
 
       {/* Messages */}
-      <main className="flex-1 overflow-y-auto bg-gray-50 px-4 py-5 space-y-4">
+      <main className="flex-1 overflow-y-auto px-4 py-5 bg-gray-50 dark:bg-[#111827] space-y-4">
         {filteredMessages.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center mt-8">No messages found.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-8">No messages found.</p>
         ) : (
           filteredMessages.map((msg) => (
             <MessageBubble
@@ -180,18 +182,18 @@ export default function ConversationPage() {
       </main>
 
       {/* Input Bar */}
-      <footer className="sticky bottom-0 z-10 bg-white border-t px-4 py-3 flex gap-2 items-center">
+      <footer className="sticky bottom-0 z-10 bg-white dark:bg-[#1f2937] border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex gap-2 items-center">
         <input
           type="text"
           value={newMessage}
           placeholder="Type your message..."
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-          className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-300 transition"
+          className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-[#111827] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
         />
         <button
           onClick={handleSendMessage}
-          className="bg-indigo-600 text-white px-5 py-2 rounded-full hover:bg-indigo-700 transition"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-full transition shadow"
         >
           Send
         </button>

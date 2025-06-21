@@ -300,5 +300,22 @@ const resolveUser = async (req, res) => {
   }
 };
 
+const fetchAllUsers = async (req, res) => {
+  const currentUserUuid = req.user.userUuid;
 
-module.exports = { addUser, deleteUser, fetchUserDetails, updateUserDetails , resolveUser};
+  try {
+    const [users] = await mysqlPool.query(
+      `SELECT uuid, username, profile_picture, bio FROM users WHERE uuid != ? ORDER BY username`,
+      [currentUserUuid]
+    );
+
+    res.status(200).json({ users });
+  } catch (err) {
+    console.error("❌ Error fetching users:", err);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+};
+
+
+
+module.exports = { addUser, deleteUser, fetchUserDetails, updateUserDetails , resolveUser,fetchAllUsers};

@@ -2,13 +2,15 @@ const { mysqlPool } = require("../db/connectDB");
 
 const resolveFriendUUID = async (req, res, next) => {
   const { friend_uuid, friend_email, friend_username } = req.body;
-
+  // console.log("friend uuid given" + friend_uuid);
+  
   if (friend_uuid) {
     // UUID already provided
     return next();
   }
 
   if (!friend_email && !friend_username) {
+    console.log("sdsds");
     return res.status(400).json({ error: "Provide friend_uuid, friend_email, or friend_username." });
   }
 
@@ -33,6 +35,7 @@ const resolveFriendUUID = async (req, res, next) => {
     req.body.friend_uuid = rows[0].uuid;
     req.body.receiver_uuid = rows[0].uuid;
     req.body.requester_uuid = rows[0].uuid;
+    
     next();
   } catch (err) {
     console.error("❌ Error in resolveFriendUUID middleware:", err);

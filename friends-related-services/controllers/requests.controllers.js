@@ -35,6 +35,7 @@ const sendRequest = async (req, res) => {
 };
 
 const retractRequest = async (req, res) => {
+  
   const requester_uuid = req.user?.userUuid;
   const { receiver_uuid } = req.body;
 
@@ -119,7 +120,10 @@ const fetchSentRequests = async (req, res) => {
 
   try {
     const [rows] = await mysqlPool.query(
-      `SELECT receiver_uuid, created_at FROM friend_requests WHERE requester_uuid = ?`,
+      `SELECT fr.receiver_uuid, u.username, fr.created_at
+       FROM friend_requests fr
+       JOIN users u ON fr.receiver_uuid = u.uuid
+       WHERE fr.requester_uuid = ?`,
       [requester_uuid]
     );
 
@@ -130,12 +134,16 @@ const fetchSentRequests = async (req, res) => {
   }
 };
 
+
 const fetchReceivedRequests = async (req, res) => {
   const receiver_uuid = req.user?.userUuid;
 
   try {
     const [rows] = await mysqlPool.query(
-      `SELECT requester_uuid, created_at FROM friend_requests WHERE receiver_uuid = ?`,
+      `SELECT fr.requester_uuid, u.username, fr.created_at
+       FROM friend_requests fr
+       JOIN users u ON fr.requester_uuid = u.uuid
+       WHERE fr.receiver_uuid = ?`,
       [receiver_uuid]
     );
 
@@ -145,6 +153,7 @@ const fetchReceivedRequests = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
 
 module.exports = {
   sendRequest,

@@ -2,10 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, UserPlus, Users } from "lucide-react";
-import ConversationCard from "@/app/components/ConversationCard";
-import FriendCard from "@/app/components/FriendCard";
+import { MessageCircleMore, MailOpen, UserPlus } from "lucide-react";
 import io from "socket.io-client";
+
+import Sidebar from "@/app/components/layout/Sidebar";
+import ConversationCard from "@/app/components/ConversationCard";
+import CreateConversationModal from "@/app/components/modals/CreateConversationModal";
+import AddFriendModal from "@/app/components/modals/AddFriendModal";
+import FriendRequestsModal from "@/app/components/modals/FriendRequestsModal";
+import CustomToastContainer from "@/app/components/ui/ToastContainer";
 
 let socket;
 
@@ -15,143 +20,163 @@ export default function HomePage() {
   const [conversations, setConversations] = useState([]);
   const [userUuid, setUserUuid] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [showAddFriend, setShowAddFriend] = useState(false);
+  const [showRequests, setShowRequests] = useState(false);
+
+  const fetchFriends = async () => {
+    const res = await fetch("http://localhost:4000/friends/manage/getFriends", { credentials: "include" });
+    setFriends((await res.json()).friends || []);
+  };
 
   const fetchConversations = async () => {
-    try {
-      const convoRes = await fetch("http://localhost:4000/messages/conversation/fetchAllConversations", {
-        credentials: "include",
-      });
-      const convoData = await convoRes.json();
-      setConversations(convoData.conversations || []);
+    const res = await fetch("http://localhost:4000/messages/conversation/fetchAllConversations", { credentials: "include" });
+    const data = await res.json();
+    setConversations(data.conversations || []);
+    data.conversations?.forEach(c => socket.emit("join_conversation", c._id));
+  };
 
-      // ✅ Join all conversation rooms
-      if (socket && convoData.conversations) {
-        convoData.conversations.forEach((c) => {
-          socket.emit("join_conversation", c._id);
-        });
-      }
-    } catch (err) {
-      console.error("❌ Failed to fetch conversations:", err);
-    }
+  const handleLogout = () => {
+    fetch("http://localhost:4000/users/auth/logout", { method: "POST", credentials: "include" })
+      .then(() => {
+        localStorage.clear();
+        router.push("/pages/auth/sign-in");
+      });
   };
 
   useEffect(() => {
     socket = io("http://localhost:5003", { withCredentials: true });
-
-    // ✅ Refresh conversations on new message
-    socket.on("receive_message", () => {
-      fetchConversations();
-    });
-
-    return () => {
-      if (socket) socket.disconnect();
-    };
+    socket.on("receive_message", fetchConversations);
+    return () => socket.disconnect();
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const userRes = await fetch("http://localhost:4000/users/crud/fetchUserDetails", {
-          credentials: "include",
-        });
-        const userData = await userRes.json();
-
-        if (!userRes.ok || !userData.user) {
-          console.error("❌ Invalid user data");
-          router.push("/pages/auth/sign-in");
-          return;
-        }
-
-        const uuid = userData.user.uuid;
-        setUserUuid(uuid);
-
-        await fetchConversations();
-
-        const friendsRes = await fetch("http://localhost:4000/friends/manage/getFriends", {
-          credentials: "include",
-        });
-        const friendsData = await friendsRes.json();
-        setFriends(friendsData.friends || []);
-      } catch (err) {
-        console.error("❌ Error in fetching data:", err);
-      }
-    };
-
-    fetchData();
+    (async () => {
+      const res = await fetch("http://localhost:4000/users/crud/fetchUserDetails", { credentials: "include" });
+      const data = await res.json();
+      if (!res.ok || !data.user) return router.push("/pages/auth/sign-in");
+      setUserUuid(data.user.uuid);
+      await fetchFriends();
+      await fetchConversations();
+    })();
   }, []);
 
-  const handleLogout = () => {
-    fetch("http://localhost:4000/users/auth/logout", {
-      method: "POST",
-      credentials: "include",
-    }).then(() => {
-      localStorage.clear();
-      router.push("/pages/auth/sign-in");
-    });
-  };
-
-  // ✅ Filter conversations based on search input
-  const filteredConversations = conversations.filter((convo) => {
-    const isGroup = convo.isGroup;
-    const title = isGroup
-      ? convo.groupName || ""
-      : convo.participants.find((p) => p.uuid !== userUuid)?.username || "";
-
-    return title.toLowerCase().includes(searchTerm.toLowerCase());
+  const filtered = conversations.filter(c => {
+    const title = c.isGroup
+      ? c.groupName
+      : c.participants.find(p => p.uuid !== userUuid)?.username;
+    return title?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   return (
-    <div className="min-h-screen flex">
-      {/* Sidebar */}
-      <aside className="w-1/4 bg-white border-r border-gray-200 p-4 space-y-6 hidden md:block">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-xl font-bold text-indigo-700">ChatNearby</h1>
-          <button onClick={handleLogout}>
-            <LogOut className="text-gray-500 hover:text-red-500" />
-          </button>
-        </div>
+    <div className="min-h-screen flex bg-white dark:bg-[#111827] transition-colors duration-300">
+      <Sidebar
+        friends={friends}
+        onLogout={handleLogout}
+        onShowFriendRequests={() => setShowRequests(true)}
+        onAddFriend={() => setShowAddFriend(true)}
+      />
 
-        <div>
-          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-            <Users size={18} /> Friends
+      <main className="flex-1 p-6 md:p-8 overflow-auto">
+        {/* Header */}
+        <div className="flex flex-wrap md:flex-nowrap justify-between items-center mb-8 gap-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white">
+            Your Chats
           </h2>
-          <ul className="space-y-2 max-h-64 overflow-y-auto">
-            {friends.length > 0 ? (
-              friends.map((f) => <FriendCard key={f.uuid} friend={f} />)
-            ) : (
-              <p className="text-sm text-gray-500">No friends added.</p>
-            )}
-          </ul>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search chats..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="px-4 py-2 w-64 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1f2937] text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+              />
+              {searchTerm && (
+                <div
+                  className="absolute top-2.5 right-3 cursor-pointer text-gray-400 dark:text-gray-500"
+                  onClick={() => setSearchTerm("")}
+                >
+                  ✕
+                </div>
+              )}
+            </div>
+
+            {/* Add Friend */}
+            <button
+              onClick={() => setShowAddFriend(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-green-400 to-teal-500 text-white font-medium px-4 py-2 rounded-full shadow hover:shadow-md transition"
+              title="Add Friend"
+            >
+              <UserPlus size={18} />
+              <span className="hidden sm:inline">Add Friend</span>
+            </button>
+
+            {/* Friend Requests */}
+            <button
+              onClick={() => setShowRequests(true)}
+              className="flex items-center gap-2 bg-white dark:bg-[#1f2937] text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-600 font-medium px-4 py-2 rounded-full shadow-sm hover:shadow-md hover:bg-teal-50 dark:hover:bg-[#1a2432] transition"
+              title="View Friend Requests"
+            >
+              <MailOpen size={18} />
+              <span className="hidden sm:inline">Requests</span>
+            </button>
+          </div>
         </div>
 
-        <button className="mt-4 w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
-          <UserPlus size={16} className="inline mr-1" /> Add Friend
-        </button>
-      </aside>
-
-      {/* Chat Section */}
-      <main className="flex-1 bg-indigo-50 p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-indigo-800">Conversations</h2>
-          <input
-            type="text"
-            placeholder="Search chats..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg w-64 focus:ring-2 focus:ring-indigo-300"
-          />
-        </div>
-
-        <div className="grid gap-4">
-          {filteredConversations.length > 0 ? (
-            filteredConversations.map((c) => (
-              <ConversationCard key={c._id} convo={c} userUuid={userUuid} />
+        {/* Chat Grid */}
+        <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.length ? (
+            filtered.map(c => (
+              <ConversationCard
+                key={c._id}
+                convo={c}
+                userUuid={userUuid}
+                className="bg-white dark:bg-[#1f2937] border border-gray-200 dark:border-gray-700 rounded-2xl shadow hover:shadow-lg transition"
+              />
             ))
           ) : (
-            <p className="text-gray-600 text-sm">No chats match your search.</p>
+            <p className="text-gray-600 dark:text-gray-400 text-lg text-center col-span-full">
+              No chats match your search.
+            </p>
           )}
         </div>
+
+        {/* New Conversation Button */}
+        <button
+          onClick={() => setShowNewChat(true)}
+          className="fixed bottom-8 right-12 bg-gradient-to-tr from-green-400 to-teal-500 text-white p-4 rounded-full shadow-lg hover:shadow-2xl hover:scale-105 transition"
+          title="New Conversation"
+        >
+          <MessageCircleMore size={24} />
+        </button>
       </main>
+
+      {/* Modals */}
+      {showNewChat && (
+        <CreateConversationModal
+          friends={friends}
+          onClose={() => setShowNewChat(false)}
+          onCreated={fetchConversations}
+        />
+      )}
+
+      {showAddFriend && (
+        <AddFriendModal
+          onClose={() => setShowAddFriend(false)}
+        />
+      )}
+
+      {showRequests && (
+        <FriendRequestsModal
+          onClose={() => setShowRequests(false)}
+          refreshFriends={fetchFriends}
+        />
+      )}
+
+      <CustomToastContainer />
     </div>
   );
 }
