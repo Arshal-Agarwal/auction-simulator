@@ -89,35 +89,37 @@ const fetchUserConversations = async (req, res) => {
   }
 
   try {
-    // Step 1: Fetch conversations involving the user
+    // Step 1: Fetch all conversations where the user is a participant
     const conversations = await Conversation.find({
       participants: userUuid,
     }).sort({ updatedAt: -1 });
 
-    // Step 2: Extract all unique participant UUIDs
-    const allUuids = [
-      ...new Set(conversations.flatMap((c) => c.participants)),
-    ];
+    // Step 2: Extract all unique UUIDs from all participants
+    const allUuids = [...new Set(conversations.flatMap(c => c.participants))];
 
-    
+    // Step 3: Fetch usernames & profile pictures from MySQL
     const [rows] = await mysqlPool.execute(
-      `SELECT uuid, username FROM users WHERE uuid IN (${allUuids.map(() => '?').join(',')})`,
+      `SELECT uuid, username, profile_picture FROM users WHERE uuid IN (${allUuids.map(() => '?').join(',')})`,
       allUuids
     );
 
-    // Step 4: Create UUID → username map
+    // Step 4: Build a UUID -> user object map
     const uuidMap = {};
-    rows.forEach((row) => {
-      uuidMap[row.uuid] = row.username;
+    rows.forEach(row => {
+      uuidMap[row.uuid] = {
+        username: row.username,
+        profile_picture: row.profile_picture
+      };
     });
 
-    // Step 5: Replace UUIDs with { uuid, username }
-    const populatedConversations = conversations.map((c) => ({
+    // Step 5: Populate the conversations with user data
+    const populatedConversations = conversations.map(c => ({
       ...c.toObject(),
-      participants: c.participants.map((uuid) => ({
+      participants: c.participants.map(uuid => ({
         uuid,
-        username: uuidMap[uuid] || "Unknown",
-      })),
+        username: uuidMap[uuid]?.username || 'Unknown',
+        profile_picture: uuidMap[uuid]?.profile_picture || null
+      }))
     }));
 
     return res.status(200).json({ conversations: populatedConversations });

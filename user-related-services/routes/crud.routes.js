@@ -5,7 +5,7 @@ const {addUser,deleteUser,fetchUserDetails,updateUserDetails,resolveUser} = requ
 
 // POST /crud/addUser
 router.post('/addUser',addUser);
-router.get('/resolveUser',resolveUser);
+router.post('/resolveUser',resolveUser);
 router.post('/deleteUser',deleteUser);
 router.get('/fetchUserDetails',verifyAccessToken,fetchUserDetails);
 router.post('/updateUserDetails',verifyAccessToken,updateUserDetails);

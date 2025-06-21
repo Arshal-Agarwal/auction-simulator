@@ -277,19 +277,28 @@ const updateUserDetails = async (req, res) => {
 };
 
 const resolveUser = async (req, res) => {
-  const uuids = req.query.uuids?.split(",") || [];
-  if (uuids.length === 0) return res.status(400).json({ error: "No UUIDs provided" });
+  const { uuid } = req.body;
+
+  if (!uuid) {
+    return res.status(400).json({ error: "UUID not provided" });
+  }
 
   try {
-    const users = await mysqlPool.query(
-      "SELECT uuid, username, profile_picture FROM users WHERE uuid IN (?)",
-      [uuids]
+    const [rows] = await mysqlPool.query(
+      "SELECT uuid, username, profile_picture FROM users WHERE uuid = ?",
+      [uuid]
     );
-    res.json({ users });
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ user: rows[0] });
   } catch (err) {
-    console.error("Resolve error:", err);
-    res.status(500).json({ error: "Failed to resolve UUIDs" });
+    console.error("Resolve user error:", err);
+    res.status(500).json({ error: "Failed to resolve UUID" });
   }
 };
+
 
 module.exports = { addUser, deleteUser, fetchUserDetails, updateUserDetails , resolveUser};

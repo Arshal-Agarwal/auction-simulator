@@ -14,6 +14,7 @@ export default function HomePage() {
   const [friends, setFriends] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [userUuid, setUserUuid] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const fetchConversations = async () => {
     try {
@@ -42,7 +43,6 @@ export default function HomePage() {
       fetchConversations();
     });
 
-    // ✅ Cleanup socket on unmount
     return () => {
       if (socket) socket.disconnect();
     };
@@ -51,7 +51,6 @@ export default function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // ✅ Fetch current user
         const userRes = await fetch("http://localhost:4000/users/crud/fetchUserDetails", {
           credentials: "include",
         });
@@ -66,7 +65,6 @@ export default function HomePage() {
         const uuid = userData.user.uuid;
         setUserUuid(uuid);
 
-        // ✅ Fetch initial conversations & friends
         await fetchConversations();
 
         const friendsRes = await fetch("http://localhost:4000/friends/manage/getFriends", {
@@ -92,6 +90,16 @@ export default function HomePage() {
     });
   };
 
+  // ✅ Filter conversations based on search input
+  const filteredConversations = conversations.filter((convo) => {
+    const isGroup = convo.isGroup;
+    const title = isGroup
+      ? convo.groupName || ""
+      : convo.participants.find((p) => p.uuid !== userUuid)?.username || "";
+
+    return title.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
   return (
     <div className="min-h-screen flex">
       {/* Sidebar */}
@@ -109,9 +117,7 @@ export default function HomePage() {
           </h2>
           <ul className="space-y-2 max-h-64 overflow-y-auto">
             {friends.length > 0 ? (
-              friends.map((f) => (
-                <FriendCard key={f.uuid} friend={f} />
-              ))
+              friends.map((f) => <FriendCard key={f.uuid} friend={f} />)
             ) : (
               <p className="text-sm text-gray-500">No friends added.</p>
             )}
@@ -130,17 +136,19 @@ export default function HomePage() {
           <input
             type="text"
             placeholder="Search chats..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg w-64 focus:ring-2 focus:ring-indigo-300"
           />
         </div>
 
         <div className="grid gap-4">
-          {conversations.length > 0 ? (
-            conversations.map((c) => (
+          {filteredConversations.length > 0 ? (
+            filteredConversations.map((c) => (
               <ConversationCard key={c._id} convo={c} userUuid={userUuid} />
             ))
           ) : (
-            <p className="text-gray-600 text-sm">You have no active chats.</p>
+            <p className="text-gray-600 text-sm">No chats match your search.</p>
           )}
         </div>
       </main>

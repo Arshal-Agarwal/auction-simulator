@@ -13,15 +13,18 @@ export default function ConversationPage() {
   const [messages, setMessages] = useState([]);
   const [userUuid, setUserUuid] = useState(null);
   const [newMessage, setNewMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const messagesEndRef = useRef(null);
 
-  // ✅ Connect to Socket.IO
+  const filteredMessages = messages.filter((msg) =>
+    msg.text.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   useEffect(() => {
     socket = io("http://localhost:5003", { withCredentials: true });
     return () => socket.disconnect();
   }, []);
 
-  // ✅ Fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -47,7 +50,6 @@ export default function ConversationPage() {
         const msgData = await msgRes.json();
         setMessages(msgData.messages || []);
 
-        // Join room
         socket.emit("join_conversation", conversationId);
       } catch (err) {
         console.error("❌ Failed to load chat data:", err);
@@ -57,7 +59,6 @@ export default function ConversationPage() {
     if (conversationId) fetchData();
   }, [conversationId]);
 
-  // ✅ Handle real-time incoming messages
   useEffect(() => {
     socket.on("receive_message", (message) => {
       if (message.conversationId === conversationId) {
@@ -79,14 +80,9 @@ export default function ConversationPage() {
     };
   }, [conversationId]);
 
-  // ✅ Mark messages as read
   useEffect(() => {
     if (!messages.length || !userUuid) return;
-
-    const unread = messages.filter(
-      (m) => !m.read && m.senderUuid !== userUuid
-    );
-
+    const unread = messages.filter((m) => !m.read && m.senderUuid !== userUuid);
     unread.forEach((msg) => {
       socket.emit("mark_as_read", {
         messageId: msg._id,
@@ -94,6 +90,10 @@ export default function ConversationPage() {
       });
     });
   }, [messages, userUuid]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
@@ -103,15 +103,8 @@ export default function ConversationPage() {
       senderUuid: userUuid,
       text: newMessage.trim(),
     });
-
     setNewMessage("");
   };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(scrollToBottom, [messages]);
 
   const getTitle = () => {
     if (!conversation) return "Loading...";
@@ -130,44 +123,79 @@ export default function ConversationPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       {/* Header */}
-      <div className="flex items-center p-4 border-b border-gray-300 bg-indigo-50">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-200 px-4 py-3 shadow-sm flex items-center gap-4">
         <img
           src={getImage() || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
           alt="avatar"
-          className="w-10 h-10 rounded-full object-cover mr-4"
+          className="w-11 h-11 rounded-full object-cover border border-gray-300"
         />
-        <h2 className="text-xl font-bold text-indigo-800">{getTitle()}</h2>
-      </div>
+        <div className="flex-1 overflow-hidden">
+          <h2 className="text-lg font-semibold text-gray-900 truncate">{getTitle()}</h2>
+          <p className="text-sm text-gray-500 truncate">
+            {conversation?.isGroup
+              ? `${conversation?.participants.length} members`
+              : "Direct chat"}
+          </p>
+        </div>
+
+        {/* Search Input */}
+        <div className="relative hidden sm:block">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search messages"
+            className="pl-10 pr-4 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white text-gray-700"
+          />
+          <svg
+            className="w-4 h-4 absolute left-3 top-2.5 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"
+            />
+          </svg>
+        </div>
+      </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 bg-gray-50">
-        {messages.map((msg) => (
-          <MessageBubble
-            key={msg._id}
-            message={msg}
-            isOwn={msg.senderUuid === userUuid}
-          />
-        ))}
+      <main className="flex-1 overflow-y-auto bg-gray-50 px-4 py-5 space-y-4">
+        {filteredMessages.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center mt-8">No messages found.</p>
+        ) : (
+          filteredMessages.map((msg) => (
+            <MessageBubble
+              key={msg._id}
+              message={msg}
+              isOwn={msg.senderUuid === userUuid}
+            />
+          ))
+        )}
         <div ref={messagesEndRef} />
-      </div>
+      </main>
 
-      {/* Input */}
-      <div className="p-4 border-t bg-white flex gap-2">
+      {/* Input Bar */}
+      <footer className="sticky bottom-0 z-10 bg-white border-t px-4 py-3 flex gap-2 items-center">
         <input
           type="text"
-          placeholder="Type your message..."
           value={newMessage}
+          placeholder="Type your message..."
           onChange={(e) => setNewMessage(e.target.value)}
-          className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300"
           onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+          className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-300 transition"
         />
         <button
           onClick={handleSendMessage}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+          className="bg-indigo-600 text-white px-5 py-2 rounded-full hover:bg-indigo-700 transition"
         >
           Send
         </button>
-      </div>
+      </footer>
     </div>
   );
 }
