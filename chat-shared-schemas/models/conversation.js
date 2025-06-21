@@ -7,20 +7,23 @@ const conversationSchema = new mongoose.Schema({
   admin: { type: String, default: null },
   groupName: { type: String, default: null },
   groupPicture: { type: String, default: null },
-  lastMessage: { type: mongoose.Schema.Types.ObjectId, ref: 'Message', default: null },
+
+  // ✅ Embed message preview details
+  lastMessage: {
+    text: { type: String, default: "" },
+    read: { type: Boolean, default: true }, // true if already read
+    senderUuid: { type: String, default: null },
+  },
+
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
 
-// Index participants array for efficient querying
 conversationSchema.index({ participants: 1 });
 
-// Enforce group rules
 conversationSchema.pre('save', function (next) {
-  if (this.isGroup) {
-    if (!this.admin || !this.groupName) {
-      return next(new Error("Group chats must have an admin and groupName."));
-    }
+  if (this.isGroup && (!this.admin || !this.groupName)) {
+    return next(new Error("Group chats must have an admin and groupName."));
   }
   this.updatedAt = Date.now();
   next();

@@ -7,6 +7,7 @@ const { connectMongoDB } = require('./db/connectDB');
 const conversation_routes = require('./routes/conversations.routes');
 const message_routes = require('./routes/messages.routes')
 const Message = require('./models/MessageModel');
+const Conversation = require('./models/ConversationModel')
 const mongoose = require('mongoose');
 
 const app = express();
@@ -51,50 +52,111 @@ io.on('connection', (socket) => {
   });
 
   // Handle sending a message
-  socket.on('send_message', async ({ conversationId, senderUuid, text }) => {
-    try {
-      const newMessage = new Message({
-        conversationId: new mongoose.Types.ObjectId(conversationId),
-        senderUuid,
-        text,
-        sent: true, // explicitly setting
+ socket.on('send_message', async ({ conversationId, senderUuid, text }) => {
+  try {
+    const newMessage = new Message({
+      conversationId: new mongoose.Types.ObjectId(conversationId),
+      senderUuid,
+      text,
+      sent: true,
+      read: false,
+      readAt: null
+    });
+
+    const savedMessage = await newMessage.save();
+
+    // ✅ Save a message summary in conversation
+    await Conversation.findByIdAndUpdate(conversationId, {
+      lastMessage: {
+        text: text.length > 100 ? text.slice(0, 100) + "..." : text,
         read: false,
-        readAt: null
+        senderUuid,
+      },
+      updatedAt: new Date(),
+    });
+
+    io.to(conversationId).emit('receive_message', savedMessage);
+  } catch (error) {
+    console.error('❌ Error saving message:', error);
+  }
+});
+
+// ✅ Mark message as read and update lastMessage.read if applicable
+socket.on('mark_as_read', async ({ messageId, readerUuid }) => {
+  try {
+    const updated = await Message.findByIdAndUpdate(
+      messageId,
+      {
+        read: true,
+        readAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (updated) {
+      // Broadcast read status
+      io.to(updated.conversationId.toString()).emit('message_read', {
+        messageId: updated._id,
+        readerUuid,
+        readAt: updated.readAt
       });
 
-      const savedMessage = await newMessage.save();
-
-      // Emit to everyone in the room
-      io.to(conversationId).emit('receive_message', savedMessage);
-    } catch (error) {
-      console.error('❌ Error saving message:', error);
+      // ✅ If this is the last message, update read status in conversation
+      const convo = await Conversation.findById(updated.conversationId);
+      if (
+        convo &&
+        convo.lastMessage &&
+        convo.lastMessage.senderUuid !== readerUuid &&
+        convo.lastMessage.text === updated.text
+      ) {
+        convo.lastMessage.read = true;
+        await convo.save();
+      }
     }
-  });
+  } catch (err) {
+    console.error('❌ Error updating message as read:', err);
+  }
+});
+
+
+
 
   // ✅ Mark message as read
   socket.on('mark_as_read', async ({ messageId, readerUuid }) => {
-    try {
-      const updated = await Message.findByIdAndUpdate(
-        messageId,
-        {
-          read: true,
-          readAt: new Date()
-        },
-        { new: true }
-      );
+  try {
+    const updated = await Message.findByIdAndUpdate(
+      messageId,
+      {
+        read: true,
+        readAt: new Date()
+      },
+      { new: true }
+    );
 
-      if (updated) {
-        // Broadcast update to conversation room
-        io.to(updated.conversationId.toString()).emit('message_read', {
-          messageId: updated._id,
-          readerUuid,
-          readAt: updated.readAt
-        });
+    if (updated) {
+      // Broadcast read status
+      io.to(updated.conversationId.toString()).emit('message_read', {
+        messageId: updated._id,
+        readerUuid,
+        readAt: updated.readAt
+      });
+
+      // ✅ If this is the last message, update read status in conversation
+      const convo = await Conversation.findById(updated.conversationId);
+      if (
+        convo &&
+        convo.lastMessage &&
+        convo.lastMessage.senderUuid !== readerUuid &&
+        convo.lastMessage.text === updated.text
+      ) {
+        convo.lastMessage.read = true;
+        await convo.save();
       }
-    } catch (err) {
-      console.error('❌ Error updating message as read:', err);
     }
-  });
+  } catch (err) {
+    console.error('❌ Error updating message as read:', err);
+  }
+});
 
   socket.on('disconnect', () => {
     console.log('🔴 Socket disconnected:', socket.id);

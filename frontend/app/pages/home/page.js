@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { LogOut, UserPlus, Users } from "lucide-react";
 import ConversationCard from "@/app/components/ConversationCard";
 import FriendCard from "@/app/components/FriendCard";
+import io from "socket.io-client";
+
+let socket;
 
 export default function HomePage() {
   const router = useRouter();
@@ -12,10 +15,43 @@ export default function HomePage() {
   const [conversations, setConversations] = useState([]);
   const [userUuid, setUserUuid] = useState(null);
 
+  const fetchConversations = async () => {
+    try {
+      const convoRes = await fetch("http://localhost:4000/messages/conversation/fetchAllConversations", {
+        credentials: "include",
+      });
+      const convoData = await convoRes.json();
+      setConversations(convoData.conversations || []);
+
+      // ✅ Join all conversation rooms
+      if (socket && convoData.conversations) {
+        convoData.conversations.forEach((c) => {
+          socket.emit("join_conversation", c._id);
+        });
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch conversations:", err);
+    }
+  };
+
+  useEffect(() => {
+    socket = io("http://localhost:5003", { withCredentials: true });
+
+    // ✅ Refresh conversations on new message
+    socket.on("receive_message", () => {
+      fetchConversations();
+    });
+
+    // ✅ Cleanup socket on unmount
+    return () => {
+      if (socket) socket.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch current user
+        // ✅ Fetch current user
         const userRes = await fetch("http://localhost:4000/users/crud/fetchUserDetails", {
           credentials: "include",
         });
@@ -30,14 +66,9 @@ export default function HomePage() {
         const uuid = userData.user.uuid;
         setUserUuid(uuid);
 
-        // Fetch conversations
-        const convoRes = await fetch("http://localhost:4000/messages/conversation/fetchAllConversations", {
-          credentials: "include",
-        });
-        const convoData = await convoRes.json();
-        setConversations(convoData.conversations || []);
+        // ✅ Fetch initial conversations & friends
+        await fetchConversations();
 
-        // Fetch friends
         const friendsRes = await fetch("http://localhost:4000/friends/manage/getFriends", {
           credentials: "include",
         });

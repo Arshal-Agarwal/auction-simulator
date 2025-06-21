@@ -11,6 +11,7 @@ export default function FriendCard({ friend }) {
         className="w-8 h-8 rounded-full object-cover"
       />
       <span className="text-gray-800 font-medium">{friend.username}</span>
+      
     </li>
   );
 }

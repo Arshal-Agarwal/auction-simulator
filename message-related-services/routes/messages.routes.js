@@ -3,9 +3,9 @@ const {fetchMessagesByConversationId} = require('../controllers/messages.control
 const { verifyAccessToken } = require('../middlewares/verifyAccessToken')
 
 
-router.post('/fetchMessagesByConversation' , verifyAccessToken ,fetchMessagesByConversationId)
+router.post('/fetchMessagesByConversationId' , verifyAccessToken ,fetchMessagesByConversationId)
 router.get('/another-route' , (req , res)=>{
     // router code here
 })
 
-module.exports  = router
+module.exports  = router 

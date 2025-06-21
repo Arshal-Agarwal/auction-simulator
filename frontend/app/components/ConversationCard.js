@@ -23,11 +23,27 @@ export default function ConversationCard({ convo, userUuid }) {
       : otherUser?.profile_picture || defaultProfile,
   };
 
+  const isUnread =
+    convo.lastMessage &&
+    convo.lastMessage.senderUuid !== userUuid &&
+    !convo.lastMessage.read;
+
   return (
     <div
-      className="bg-white p-4 rounded-lg shadow-md hover:shadow-indigo-200 cursor-pointer transition flex items-center gap-4"
-      onClick={() => router.push(`/chat/${convo._id}`)}
+      className={`relative bg-white p-4 rounded-lg shadow-md hover:shadow-indigo-200 cursor-pointer transition flex items-center gap-4 ${
+        isUnread ? "ring-2 ring-indigo-300" : ""
+      }`}
+      onClick={() => router.push(`/pages/chat/${convo._id}`)}
     >
+      {/* 🔵 Dot indicator for unread */}
+      {isUnread && (
+  <>
+    <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-indigo-400 rounded-full animate-ping" />
+    <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-indigo-600 rounded-full" />
+  </>
+)}
+
+
       <img
         src={chatData.image}
         alt="avatar"
@@ -40,8 +56,14 @@ export default function ConversationCard({ convo, userUuid }) {
           </h3>
           <MessageCircle className="text-indigo-500" size={20} />
         </div>
-        <p className="text-gray-500 text-sm mt-1 line-clamp-1">
-          {convo.lastMessage || "No messages yet."}
+        <p
+          className={`text-sm mt-1 line-clamp-1 transition ${
+            isUnread
+              ? "font-bold text-indigo-800"
+              : "text-gray-500"
+          }`}
+        >
+          {convo.lastMessage?.text || "No messages yet."}
         </p>
       </div>
     </div>
