@@ -76,13 +76,21 @@ export default function FriendRequestsModal({ onClose, refreshFriends }) {
   );
 
   return (
-    <div className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl p-6 relative space-y-6 border border-gray-100 dark:border-gray-700">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400">
-          <X size={20} />
-        </button>
+  <div className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] p-6 border border-gray-100 dark:border-gray-700 flex flex-col">
+      {/* Close Button */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 text-gray-500 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 z-10"
+      >
+        <X size={20} />
+      </button>
 
-        <h2 className="text-2xl font-bold text-center text-indigo-700 dark:text-indigo-300">Friend Requests</h2>
+      {/* Scrollable content */}
+      <div className="overflow-y-auto space-y-6 pr-2 mt-6">
+        <h2 className="text-2xl font-bold text-center text-indigo-700 dark:text-indigo-300">
+          Friend Requests
+        </h2>
 
         {/* Incoming */}
         <section>
@@ -100,14 +108,18 @@ export default function FriendRequestsModal({ onClose, refreshFriends }) {
                   actions={[
                     <button
                       key="accept"
-                      onClick={() => handleAccept({ uuid: req.requester_uuid, username: req.username })}
+                      onClick={() =>
+                        handleAccept({ uuid: req.requester_uuid, username: req.username })
+                      }
                       className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full text-sm"
                     >
                       Accept
                     </button>,
                     <button
                       key="reject"
-                      onClick={() => handleReject({ uuid: req.requester_uuid, username: req.username })}
+                      onClick={() =>
+                        handleReject({ uuid: req.requester_uuid, username: req.username })
+                      }
                       className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-full text-sm"
                     >
                       Reject
@@ -137,7 +149,9 @@ export default function FriendRequestsModal({ onClose, refreshFriends }) {
                   actions={[
                     <button
                       key="retract"
-                      onClick={() => handleRetract({ uuid: req.receiver_uuid, username: req.username })}
+                      onClick={() =>
+                        handleRetract({ uuid: req.receiver_uuid, username: req.username })
+                      }
                       className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-full text-sm"
                     >
                       Retract
@@ -152,5 +166,6 @@ export default function FriendRequestsModal({ onClose, refreshFriends }) {
         </section>
       </div>
     </div>
-  );
+  </div>
+);
 }

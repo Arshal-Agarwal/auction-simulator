@@ -10,7 +10,7 @@ const googleOAuthCallback = async (req, res) => {
     const isComplete = await isUserProfileComplete(user.uuid); // You implement this check
 
     const redirectUrl = isComplete
-      ? 'http://localhost:3000/home'
+      ? 'http://localhost:3000/pages/home'
       : `http://localhost:3000/pages/auth/complete-pre-signup?email=${user.email}`;
 
     res.redirect(redirectUrl);
@@ -74,7 +74,7 @@ const githubOAuthCallback = async (req, res) => {
     const isComplete = await isUserProfileComplete(user.uuid); // same check
 
     const redirectUrl = isComplete
-      ? 'http://localhost:3000/home'
+      ? 'http://localhost:3000/pages/home'
       : `http://localhost:3000/pages/auth/complete-pre-signup?email=${encodeURIComponent(user.email)}`;
 
     res.redirect(redirectUrl);

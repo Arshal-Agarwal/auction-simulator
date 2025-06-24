@@ -4,6 +4,7 @@ import { LogOut, UserPlus, Users, MailOpen, Settings, Moon, Sun } from "lucide-r
 import FriendCard from "../FriendCard";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import FriendList from "../FriendsList"; 
 
 
 export default function Sidebar({ friends, onLogout, onShowFriendRequests, onAddFriend }) {
@@ -30,85 +31,69 @@ export default function Sidebar({ friends, onLogout, onShowFriendRequests, onAdd
   };
 
   return (
-    <aside className="w-[280px] fixed min-h-screen bg-gradient-to-b from-[#fdfcfb] to-[#e2d1c3] dark:from-gray-900 dark:to-gray-800 border-r border-gray-200 dark:border-gray-700 px-6 py-8 hidden md:flex flex-col shadow-2xl dark:shadow-xl">
+    <aside className="w-[280px] fixed inset-y-0 left-0 flex flex-col bg-gradient-to-b from-[#fdfcfb] to-[#e2d1c3] dark:from-gray-900 dark:to-gray-800 border-r border-gray-200 dark:border-gray-700 px-6 py-6 shadow-2xl dark:shadow-xl">
+  {/* Header */}
+  <div className="flex justify-between items-center mb-4">
+    <h1 className="text-2xl font-extrabold bg-gradient-to-r from-[#6b5b95] to-[#feb47b] bg-clip-text text-transparent tracking-wide">
+      ChatNearby
+    </h1>
+    <button
+      onClick={onLogout}
+      className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900 transition-colors"
+      title="Logout"
+    >
+      <LogOut className="text-gray-500 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400" size={20} />
+    </button>
+  </div>
 
-      {/* Header + Friends list scrollable area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-[#6b5b95] to-[#feb47b] bg-clip-text text-transparent tracking-wide">
-            ChatNearby
-          </h1>
-          <button
-            onClick={onLogout}
-            className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900 transition-colors"
-            title="Logout"
-          >
-            <LogOut className="text-gray-500 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400" size={20} />
-          </button>
-        </div>
+  {/* Scrollable Friends List */}
+  <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar mb-6">
+    <h2 className="text-md font-semibold mb-3 flex items-center gap-2 text-gray-700 dark:text-gray-300">
+      <Users size={20} /> Friends
+    </h2>
+    <div className="space-y-3">
+      <FriendList friends={friends} />
 
-        {/* Friends list */}
-        <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-          <h2 className="text-md font-semibold mb-3 flex items-center gap-2 text-gray-700 dark:text-gray-300">
-            <Users size={20} /> Friends
-          </h2>
-          <div className="space-y-3">
-            {friends.length > 0 ? (
-              friends.map((f) => (
-                <div
-                  key={f.uuid}
-                  className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition rounded-xl p-3"
-                >
-                  <FriendCard friend={f} />
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400">No friends added yet.</p>
-            )}
-          </div>
-        </div>
-      </div>
+    </div>
+  </div>
 
-      {/* Bottom Buttons */}
-      <div className="space-y-3 pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
-        {/* Add Friend */}
-        <button
-          onClick={onAddFriend}
-          className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-green-400 to-teal-500 text-white hover:shadow-md transition"
-        >
-          <UserPlus size={18} />
-          Add Friend
-        </button>
+  {/* Sticky Bottom Buttons */}
+  <div className="space-y-3">
+    <button
+      onClick={onAddFriend}
+      className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-green-400 to-teal-500 text-white hover:shadow-md transition"
+    >
+      <UserPlus size={18} />
+      Add Friend
+    </button>
 
-        {/* Friend Requests */}
-        <button
-          onClick={onShowFriendRequests}
-          className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg border border-teal-200 text-teal-700 bg-white dark:bg-gray-900 hover:bg-teal-50 dark:hover:bg-gray-800 transition"
-        >
-          <MailOpen size={18} />
-          Friend Requests
-        </button>
+    <button
+      onClick={onShowFriendRequests}
+      className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg border border-teal-200 text-teal-700 bg-white dark:bg-gray-900 hover:bg-teal-50 dark:hover:bg-gray-800 transition"
+    >
+      <MailOpen size={18} />
+      Friend Requests
+    </button>
 
-        {/* Settings */}
-        <button
-          onClick={() => router.push('/pages/settings')}
-          className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 transition"
-        >
-          <Settings size={18} />
-          Settings
-        </button>
+    <button
+      onClick={() => router.push('/pages/settings')}
+      className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 transition"
+    >
+      <Settings size={18} />
+      Settings
+    </button>
 
-        {/* Dark Mode Toggle */}
-        <button
-          onClick={toggleDarkMode}
-          className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition"
-        >
-          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-          {darkMode ? "Light Mode" : "Dark Mode"}
-        </button>
-      </div>
-    </aside>
+    <button
+      onClick={toggleDarkMode}
+      className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition"
+    >
+      {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+      {darkMode ? "Light Mode" : "Dark Mode"}
+    </button>
+  </div>
+</aside>
+
+
 
 
   );

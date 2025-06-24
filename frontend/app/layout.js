@@ -1,6 +1,8 @@
+// app/layout.js
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import KeepAlive from "@/app/components/KeepAlive"; // adjust path if needed
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,10 +22,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Toaster position="top-right" />
+        <KeepAlive /> {/* 🔄 Silent refresh */}
         {children}
       </body>
     </html>

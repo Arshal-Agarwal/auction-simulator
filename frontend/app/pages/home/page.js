@@ -24,47 +24,87 @@ export default function HomePage() {
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
 
+  const fetchUser = async () => {
+    try {
+      const res = await fetch("http://localhost:4000/users/crud/fetchUserDetails", {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        router.push("/pages/auth/sign-in");
+        return null;
+      }
+
+      const data = await res.json();
+      console.log(data);
+      
+      return data.user;
+    } catch (err) {
+      console.error("Error fetching user:", err);
+      router.push("/pages/auth/sign-in");
+      return null;
+    }
+  };
+
   const fetchFriends = async () => {
-    const res = await fetch("http://localhost:4000/friends/manage/getFriends", { credentials: "include" });
+    const res = await fetch("http://localhost:4000/friends/manage/getFriends", {
+      credentials: "include",
+    });
     setFriends((await res.json()).friends || []);
   };
 
   const fetchConversations = async () => {
-    const res = await fetch("http://localhost:4000/messages/conversation/fetchAllConversations", { credentials: "include" });
+    const res = await fetch("http://localhost:4000/messages/conversation/fetchAllConversations", {
+      credentials: "include",
+    });
     const data = await res.json();
     setConversations(data.conversations || []);
-    data.conversations?.forEach(c => socket.emit("join_conversation", c._id));
+    data.conversations?.forEach((c) => socket.emit("join_conversation", c._id));
   };
 
   const handleLogout = () => {
-    fetch("http://localhost:4000/users/auth/logout", { method: "POST", credentials: "include" })
-      .then(() => {
-        localStorage.clear();
-        router.push("/pages/auth/sign-in");
-      });
+    fetch("http://localhost:4000/users/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    }).then(() => {
+      localStorage.clear();
+      router.push("/pages/auth/sign-in");
+    });
   };
 
+  // WebSocket setup
   useEffect(() => {
     socket = io("http://localhost:5003", { withCredentials: true });
     socket.on("receive_message", fetchConversations);
     return () => socket.disconnect();
   }, []);
 
+  // Initial load
   useEffect(() => {
     (async () => {
-      const res = await fetch("http://localhost:4000/users/crud/fetchUserDetails", { credentials: "include" });
-      const data = await res.json();
-      if (!res.ok || !data.user) return router.push("/pages/auth/sign-in");
-      setUserUuid(data.user.uuid);
+      const user = await fetchUser();
+      if (!user || !user.uuid) return;
+
+      setUserUuid(user.uuid);
       await fetchFriends();
       await fetchConversations();
     })();
   }, []);
 
-  const filtered = conversations.filter(c => {
+  // 🔄 Silent session refresh every 5 mins (optional)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch("http://localhost:4000/users/crud/fetchUserDetails", {
+        credentials: "include",
+      }).catch(() => {});
+    }, 5 * 60 * 1000); // 5 minutes
+    return () => clearInterval(interval);
+  }, []);
+
+  const filtered = conversations.filter((c) => {
     const title = c.isGroup
       ? c.groupName
-      : c.participants.find(p => p.uuid !== userUuid)?.username;
+      : c.participants.find((p) => p.uuid !== userUuid)?.username;
     return title?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
@@ -78,20 +118,16 @@ export default function HomePage() {
       />
 
       <main className="flex-1 ml-[280px] p-6 md:p-8 overflow-auto">
-        {/* Header */}
         <div className="flex flex-wrap md:flex-nowrap justify-between items-center mb-8 gap-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white">
-            Your Chats
-          </h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white">Your Chats</h2>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* Search Input */}
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search chats..."
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="px-4 py-2 w-64 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1f2937] text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
               />
               {searchTerm && (
@@ -104,21 +140,17 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Add Friend */}
             <button
               onClick={() => setShowAddFriend(true)}
               className="flex items-center gap-2 bg-gradient-to-r from-green-400 to-teal-500 text-white font-medium px-4 py-2 rounded-full shadow hover:shadow-md transition"
-              title="Add Friend"
             >
               <UserPlus size={18} />
               <span className="hidden sm:inline">Add Friend</span>
             </button>
 
-            {/* Friend Requests */}
             <button
               onClick={() => setShowRequests(true)}
               className="flex items-center gap-2 bg-white dark:bg-[#1f2937] text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-600 font-medium px-4 py-2 rounded-full shadow-sm hover:shadow-md hover:bg-teal-50 dark:hover:bg-[#1a2432] transition"
-              title="View Friend Requests"
             >
               <MailOpen size={18} />
               <span className="hidden sm:inline">Requests</span>
@@ -126,10 +158,9 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Chat Grid */}
         <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.length ? (
-            filtered.map(c => (
+            filtered.map((c) => (
               <ConversationCard
                 key={c._id}
                 convo={c}
@@ -144,17 +175,14 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* New Conversation Button */}
         <button
           onClick={() => setShowNewChat(true)}
           className="fixed bottom-8 right-12 bg-gradient-to-tr from-green-400 to-teal-500 text-white p-4 rounded-full shadow-lg hover:shadow-2xl hover:scale-105 transition"
-          title="New Conversation"
         >
           <MessageCircleMore size={24} />
         </button>
       </main>
 
-      {/* Modals */}
       {showNewChat && (
         <CreateConversationModal
           friends={friends}
@@ -163,17 +191,9 @@ export default function HomePage() {
         />
       )}
 
-      {showAddFriend && (
-        <AddFriendModal
-          onClose={() => setShowAddFriend(false)}
-        />
-      )}
-
+      {showAddFriend && <AddFriendModal onClose={() => setShowAddFriend(false)} />}
       {showRequests && (
-        <FriendRequestsModal
-          onClose={() => setShowRequests(false)}
-          refreshFriends={fetchFriends}
-        />
+        <FriendRequestsModal onClose={() => setShowRequests(false)} refreshFriends={fetchFriends} />
       )}
 
       <CustomToastContainer />

@@ -3,10 +3,15 @@ const router = express.Router();
 const passport = require('passport');
 const { login, logout, checkEmailExists,checkUsernameExists} = require('../controllers/auth.controller');
 const { googleOAuthCallback, githubOAuthCallback } = require('../controllers/oauth.controller');
+const { verifyAccessToken } = require("../middlewares/verifyAccessToken");
 
 // 🟢 Email existence check route
 router.get('/check-email', checkEmailExists);
 router.get('/check-username', checkUsernameExists);
+
+router.get("/keep-alive", verifyAccessToken, (req, res) => {
+  return res.status(200).json({ message: "Access token refreshed" });
+});
 
 // 🔐 Local login/logout
 router.post('/login', login);

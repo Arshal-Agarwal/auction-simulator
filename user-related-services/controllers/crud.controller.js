@@ -4,6 +4,11 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { getRefreshTokenFromDbAndVerify } = require('./auth.controller');
 const RefreshToken = require('../models/RefreshTokenModel');
+const cloudinary = require("../config/cloudinary");
+const multer = require("multer");
+const fs = require("fs");
+const path = require("path");
+const { log } = require('console');
 
 const addUser = async (req, res) => {
   console.log("Add user request received");
@@ -316,6 +321,56 @@ const fetchAllUsers = async (req, res) => {
   }
 };
 
+const upload = multer({ dest: "uploads/" });
+
+const uploadProfilePicture = async (req, res) => {
+  console.log("🚀 Route hit");
+  console.log("✅ file:", req.file);
+  console.log("✅ user:", req.user);
+
+  const userUuid = req.user?.userUuid;
+  const file = req.file;
+
+  if (!userUuid || !file) {
+    return res.status(400).json({ error: "Missing image or user UUID" });
+  }
+
+    try {
+      // Fetch current profile picture URL
+      const [rows] = await mysqlPool.query(
+        "SELECT profile_picture FROM users WHERE uuid = ?",
+        [userUuid]
+      );
+
+      const existingUrl = rows[0]?.profile_picture;
+
+      // Delete old Cloudinary image if applicable
+      if (existingUrl?.includes("res.cloudinary.com")) {
+        const parts = existingUrl.split("/");
+        const publicId = parts.at(-1).split(".")[0]; // Get file ID
+        await cloudinary.uploader.destroy(publicId);
+      }
+
+      // Upload new file to Cloudinary
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder: "profile_pictures", // Optional: organize in folder
+      });
+
+      fs.unlinkSync(file.path); // remove local temp file
+
+      // Update user's profile_picture field
+      await mysqlPool.query(
+        "UPDATE users SET profile_picture = ?, updated_at = CURRENT_TIMESTAMP WHERE uuid = ?",
+        [result.secure_url, userUuid]
+      );
+
+      return res.status(200).json({ message: "✅ Profile picture updated", url: result.secure_url });
+    } catch (err) {
+      console.error("Upload error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
 
 
-module.exports = { addUser, deleteUser, fetchUserDetails, updateUserDetails , resolveUser,fetchAllUsers};
+
+module.exports = { addUser, deleteUser, fetchUserDetails, updateUserDetails , resolveUser,fetchAllUsers,uploadProfilePicture};
