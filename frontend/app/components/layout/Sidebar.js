@@ -1,15 +1,41 @@
 "use client";
 
-import { LogOut, UserPlus, Users, MailOpen } from "lucide-react";
+import { LogOut, UserPlus, Users, MailOpen, Settings, Moon, Sun } from "lucide-react";
 import FriendCard from "../FriendCard";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+
 
 export default function Sidebar({ friends, onLogout, onShowFriendRequests, onAddFriend }) {
-  return (
-    <aside className="w-[280px] min-h-screen bg-gradient-to-b from-[#fdfcfb] to-[#e2d1c3] dark:from-gray-900 dark:to-gray-800 border-r border-gray-200 dark:border-gray-700 px-6 py-8 hidden md:flex flex-col justify-between shadow-2xl dark:shadow-xl">
+  const [darkMode, setDarkMode] = useState(false);
 
-      {/* Header */}
-      <div>
-        <div className="flex justify-between items-center mb-8">
+  const router = useRouter();
+
+  useEffect(() => {
+    // Initialize based on current theme
+    setDarkMode(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  const toggleDarkMode = () => {
+    const html = document.documentElement;
+    if (html.classList.contains("dark")) {
+      html.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+      setDarkMode(false);
+    } else {
+      html.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+      setDarkMode(true);
+    }
+  };
+
+  return (
+    <aside className="w-[280px] fixed min-h-screen bg-gradient-to-b from-[#fdfcfb] to-[#e2d1c3] dark:from-gray-900 dark:to-gray-800 border-r border-gray-200 dark:border-gray-700 px-6 py-8 hidden md:flex flex-col shadow-2xl dark:shadow-xl">
+
+      {/* Header + Friends list scrollable area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-extrabold bg-gradient-to-r from-[#6b5b95] to-[#feb47b] bg-clip-text text-transparent tracking-wide">
             ChatNearby
           </h1>
@@ -22,12 +48,12 @@ export default function Sidebar({ friends, onLogout, onShowFriendRequests, onAdd
           </button>
         </div>
 
-        {/* Friends List */}
-        <div>
+        {/* Friends list */}
+        <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
           <h2 className="text-md font-semibold mb-3 flex items-center gap-2 text-gray-700 dark:text-gray-300">
             <Users size={20} /> Friends
           </h2>
-          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+          <div className="space-y-3">
             {friends.length > 0 ? (
               friends.map((f) => (
                 <div
@@ -44,10 +70,46 @@ export default function Sidebar({ friends, onLogout, onShowFriendRequests, onAdd
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="space-y-3">
-        
+      {/* Bottom Buttons */}
+      <div className="space-y-3 pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
+        {/* Add Friend */}
+        <button
+          onClick={onAddFriend}
+          className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-green-400 to-teal-500 text-white hover:shadow-md transition"
+        >
+          <UserPlus size={18} />
+          Add Friend
+        </button>
+
+        {/* Friend Requests */}
+        <button
+          onClick={onShowFriendRequests}
+          className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg border border-teal-200 text-teal-700 bg-white dark:bg-gray-900 hover:bg-teal-50 dark:hover:bg-gray-800 transition"
+        >
+          <MailOpen size={18} />
+          Friend Requests
+        </button>
+
+        {/* Settings */}
+        <button
+          onClick={() => router.push('/pages/settings')}
+          className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 transition"
+        >
+          <Settings size={18} />
+          Settings
+        </button>
+
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={toggleDarkMode}
+          className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition"
+        >
+          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+          {darkMode ? "Light Mode" : "Dark Mode"}
+        </button>
       </div>
     </aside>
+
+
   );
 }

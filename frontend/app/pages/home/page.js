@@ -77,7 +77,7 @@ export default function HomePage() {
         onAddFriend={() => setShowAddFriend(true)}
       />
 
-      <main className="flex-1 p-6 md:p-8 overflow-auto">
+      <main className="flex-1 ml-[280px] p-6 md:p-8 overflow-auto">
         {/* Header */}
         <div className="flex flex-wrap md:flex-nowrap justify-between items-center mb-8 gap-4">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white">
