@@ -5,9 +5,11 @@ const multer = require("multer");
 const upload = multer({ dest: "uploads/" }); // temp storage, you can customize this
 
 
-const {addUser,deleteUser,fetchUserDetails,updateUserDetails,resolveUser,fetchAllUsers,uploadProfilePicture} = require('./../controllers/crud.controller')
+const {addUser,deleteUser,fetchUserDetails,updateUserDetails,resolveUser,fetchAllUsers,uploadProfilePicture,resolveUserByUsername} = require('./../controllers/crud.controller')
 
 // POST /crud/addUser
+
+router.post("/resolveUserByUsername", resolveUserByUsername);
 router.post('/addUser',addUser);
 router.post('/resolveUser',resolveUser);
 router.post('/deleteUser',deleteUser);

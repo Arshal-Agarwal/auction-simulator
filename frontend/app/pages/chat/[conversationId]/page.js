@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 import MessageBubble from "../../../components/MessageBubbles";
@@ -15,6 +15,8 @@ export default function ConversationPage() {
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const messagesEndRef = useRef(null);
+  
+  const router = useRouter();
 
   const filteredMessages = messages.filter((msg) =>
     msg.text.toLowerCase().includes(searchTerm.toLowerCase())
@@ -124,6 +126,7 @@ export default function ConversationPage() {
       
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white/80 dark:bg-[#1f2937]/80 backdrop-blur border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm flex items-center gap-4">
+      
         <img
           src={getImage() || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
           alt="avatar"

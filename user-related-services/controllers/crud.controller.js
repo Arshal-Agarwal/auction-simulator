@@ -371,6 +371,32 @@ const uploadProfilePicture = async (req, res) => {
     }
   }
 
+  const resolveUserByUsername = async (req, res) => {
+  const { username } = req.body;
+  
+
+  if (!username) {
+    return res.status(400).json({ error: "Username not provided" });
+  }
+
+  try {
+    const [rows] = await mysqlPool.query(
+      "SELECT uuid, username, profile_picture, bio, created_at FROM users WHERE username = ?",
+      [username]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ user: rows[0] });
+  } catch (err) {
+    console.error("Resolve user by username error:", err);
+    res.status(500).json({ error: "Failed to resolve user by username" });
+  }
+};
 
 
-module.exports = { addUser, deleteUser, fetchUserDetails, updateUserDetails , resolveUser,fetchAllUsers,uploadProfilePicture};
+
+
+module.exports = { addUser, deleteUser, fetchUserDetails, updateUserDetails , resolveUser,fetchAllUsers,uploadProfilePicture,resolveUserByUsername};
