@@ -15,7 +15,7 @@ export default function ConversationPage() {
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const messagesEndRef = useRef(null);
-  
+
   const router = useRouter();
 
   const filteredMessages = messages.filter((msg) =>
@@ -123,10 +123,23 @@ export default function ConversationPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-[#111827] transition-colors duration-200">
-      
+
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/80 dark:bg-[#1f2937]/80 backdrop-blur border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm flex items-center gap-4">
-      
+      <header
+        onClick={() => {
+          if (!conversation) return;
+
+          if (conversation.isGroup) {
+            router.push(`/pages/group/${conversation._id}`);
+          } else {
+            const other = conversation.participants.find(p => p.uuid !== userUuid);
+            if (other?.username) {
+              router.push(`/pages/profile/${other.username}`);
+            }
+          }
+        }}
+        className="cursor-pointer sticky top-0 z-30 bg-white/80 dark:bg-[#1f2937]/80 backdrop-blur border-b border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm flex items-center gap-4"
+      >
         <img
           src={getImage() || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
           alt="avatar"
@@ -148,6 +161,7 @@ export default function ConversationPage() {
           <input
             type="text"
             value={searchTerm}
+            onClick={(e) => e.stopPropagation()} // prevent routing when clicking inside input
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search messages"
             className="pl-10 pr-4 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-[#1f2937] text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
@@ -167,6 +181,7 @@ export default function ConversationPage() {
           </svg>
         </div>
       </header>
+
 
       {/* Messages */}
       <main className="flex-1 overflow-y-auto px-4 py-5 bg-gray-50 dark:bg-[#111827] space-y-4">

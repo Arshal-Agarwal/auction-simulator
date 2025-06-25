@@ -7,6 +7,7 @@ const conversationSchema = new mongoose.Schema({
   admin: { type: String, default: null },
   groupName: { type: String, default: null },
   groupPicture: { type: String, default: null },
+  description : { type: String, default: null },
 
   // ✅ Embed message preview details
   lastMessage: {

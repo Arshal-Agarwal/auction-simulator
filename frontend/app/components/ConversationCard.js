@@ -7,7 +7,7 @@ export default function ConversationCard({ convo, userUuid }) {
   const router = useRouter();
 
   const isGroup = convo.isGroup;
-  const defaultProfile = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+  const defaultProfile = "/circle-user.png";
 
   const otherUser = !isGroup
     ? convo.participants.find((p) => p.uuid !== userUuid)
@@ -21,6 +21,8 @@ export default function ConversationCard({ convo, userUuid }) {
       ? convo.groupPicture || defaultProfile
       : otherUser?.profile_picture || defaultProfile,
   };
+  console.log(chatData.image+"dsdsd");
+  
 
   const isUnread =
     convo.lastMessage &&
@@ -43,7 +45,7 @@ export default function ConversationCard({ convo, userUuid }) {
       )}
 
       <img
-        src={chatData.image}
+        src={chatData.image || "/vercel.svg"}
         alt={`${chatData.title}'s avatar`}
         className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-600"
       />
