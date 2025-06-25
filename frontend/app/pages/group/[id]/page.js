@@ -29,6 +29,9 @@ export default function GroupDescriptionPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editGroupName, setEditGroupName] = useState("");
   const [editGroupPicture, setEditGroupPicture] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+
 
   useEffect(() => {
     (async () => {
@@ -314,15 +317,22 @@ export default function GroupDescriptionPage() {
 
 
   const handleUpdateGroup = async () => {
+    const body = {
+      conversationId: group._id,
+      groupName: editGroupName,
+      description: editDescription,
+    };
+
+    // Only include groupPicture if it has a non-empty value
+    if (editGroupPicture.trim() !== "") {
+      body.groupPicture = editGroupPicture;
+    }
+
     const res = await fetch("http://localhost:4000/messages/conversation/updateConversation", {
       method: "PUT",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        conversationId: group._id,
-        groupName: editGroupName,
-        groupPicture: editGroupPicture,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (res.ok) {
@@ -331,14 +341,18 @@ export default function GroupDescriptionPage() {
         ...prev,
         groupName: data.conversation.groupName,
         groupPicture: data.conversation.groupPicture,
+        description: data.conversation.description,
       }));
       toast.success("Group updated successfully");
       setEditModalOpen(false);
+      setIsEditingDescription(false);
     } else {
       const err = await res.json();
       toast.error(err.error || "Failed to update group.");
     }
   };
+
+
 
   if (loading) return <div className="p-6 text-gray-600 dark:text-gray-300">Loading...</div>;
   if (!group || !currentUser) return null;
@@ -397,11 +411,52 @@ export default function GroupDescriptionPage() {
 
           {/* Group Description */}
           <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-300 dark:border-gray-700">
-            <h2 className="text-lg font-semibold mb-2 text-indigo-700 dark:text-indigo-300">About This Group</h2>
-            <p className="whitespace-pre-line text-gray-800 dark:text-gray-200">
-              {group.description || "No group description available."}
-            </p>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-semibold text-indigo-700 dark:text-indigo-300">About This Group</h2>
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setEditDescription(group.description || "");
+                    setIsEditingDescription(true);
+                  }}
+                  className="text-sm text-indigo-600 hover:underline"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+
+            {isEditingDescription ? (
+              <div className="space-y-2">
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 rounded border dark:bg-gray-900 dark:text-white"
+                  placeholder="Enter group description"
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setIsEditingDescription(false)}
+                    className="px-4 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdateGroup}
+                    className="px-4 py-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="whitespace-pre-line text-gray-800 dark:text-gray-200">
+                {group.description || "No group description available."}
+              </p>
+            )}
           </div>
+
 
           {/* Participants */}
           <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-300 dark:border-gray-700">
